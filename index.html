@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07231d">
+  <meta name="description" content="Kéo Xì Dzách miền Nam online: tạo phòng, chia sẻ mã mời, kéo bài cùng bạn bè trên điện thoại và máy tính.">
+  <title>KÉO XÌ DZÁCH • Bàn Bài Miền Nam Online</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="ambient"></div>
+  <div class="site">
+    <header class="topbar">
+      <div class="brand"><div class="brand-emblem">♠</div><div><strong>KÉO <span>XÌ DZÁCH</span></strong><small>MIỀN NAM • CHƠI CÙNG BẠN BÈ</small></div></div>
+      <div class="topright"><span id="netState" class="net connecting"><i></i>Đang kết nối</span><button class="ghost" type="button" id="helpBtn">? Luật chơi</button></div>
+    </header>
+
+    <main id="landing" class="landing">
+      <section class="welcome">
+        <div class="eyebrow"><span class="spark">✦</span> PHIÊN BẢN MULTIPLAYER REAL-TIME</div>
+        <h1>Lập bàn <em>kéo xì dzách</em><br>cùng hội bạn.</h1>
+        <p>Một người tạo phòng, gửi mã cho mọi người. Vào bàn là chơi — mỗi người tự kéo bài trên điện thoại hoặc máy tính.</p>
+        <div class="feature-chips"><span>🃏 52 lá chuẩn</span><span>👥 2–7 người thật</span><span>🔐 Bài riêng tư</span><span>⚡ Đồng bộ trực tiếp</span></div>
+        <div class="landing-art" aria-hidden="true"><div class="glow-ring"></div><div class="art-card backcard"></div><div class="art-card leftcard">A <b>♠</b></div><div class="art-card rightcard">K <b>♥</b></div><div class="art-word">DZÁCH!</div></div>
+      </section>
+      <section class="entry-card">
+        <div class="entry-heading"><span class="icon-block">🃏</span><div><h2>Vô bàn thôi!</h2><p>Nhập tên để bạn bè nhận ra nha.</p></div></div>
+        <label for="playerName">TÊN CỦA BẠN</label><input id="playerName" maxlength="22" autocomplete="nickname" placeholder="VD: Vũ đẹp trai" value="">
+        <button class="primary full" id="createBtn" type="button">♛ &nbsp; TẠO PHÒNG MỚI <span>→</span></button>
+        <div class="or"><span>HOẶC</span></div>
+        <label for="roomCode">MÃ PHÒNG BẠN BÈ GỬI</label>
+        <div class="code-line"><input id="roomCode" maxlength="6" autocomplete="off" spellcheck="false" placeholder="VD: 7KM3PA"><button id="joinBtn" class="secondary" type="button">VÀO PHÒNG →</button></div>
+        <div class="entry-foot"><span class="green-led"></span> Không tải ứng dụng • Không tài khoản • Không tiền thật</div>
+      </section>
+    </main>
+
+    <main id="roomPage" hidden>
+      <section class="room-tools">
+        <div class="room-identity"><div class="room-label">BÀN BÀI CỦA BẠN</div><div class="room-code">MÃ PHÒNG <strong id="codeDisplay">------</strong><button class="copy-mini" id="copyCodeBtn" title="Sao chép mã" type="button">⧉</button></div></div>
+        <div class="room-toolbar"><span id="phasePill" class="phase-pill">ĐANG CHỜ</span><button class="goldline" id="shareBtn" type="button">↗ MỜI BẠN VÔ</button><button class="ghost" id="leaveBtn" type="button">↩ Rời phòng</button></div>
+      </section>
+
+      <div class="room-layout">
+        <div class="main-game">
+          <section class="table-outer" aria-label="Bàn xì dzách">
+            <div class="table-inner">
+              <div class="etched-circle"><b>♠ &nbsp; ♥ &nbsp; ♣ &nbsp; ♦</b><small>KÉO XÌ DZÁCH</small></div>
+              <div id="dealerSeat" class="dealer-zone"></div>
+              <div class="table-middle"><span id="tableInfo" class="table-info">Chờ mọi người vào bàn…</span><div class="stock"><div class="stock-deck">♠</div><small id="deckDisplay">BỘ BÀI 52 LÁ</small></div></div>
+              <div id="playersZone" class="player-zone"></div>
+            </div>
+          </section>
+          <section class="control-panel">
+            <div id="turnHint" class="turn-hint">Mời bạn bè vào phòng rồi chia bài nha!</div>
+            <div id="actions" class="actions"></div>
+          </section>
+          <section id="hostSettings" class="host-settings" hidden>
+            <div class="section-head"><strong>⚙️ Thiết lập bàn</strong><small>Chỉ chủ phòng được chỉnh khi giữa các ván</small></div>
+            <div class="host-fields"><label>Nhà cái <select id="dealerSelect"></select></label><label>Nhà cái xét từ <select id="minSelect"><option value="16">16 điểm</option><option value="15">15 điểm</option></select></label></div>
+          </section>
+        </div>
+        <aside class="sidebar">
+          <section class="side-card seats-panel"><div class="section-head"><strong>👥 Trong phòng</strong><span id="peopleCount" class="countbadge">0/7</span></div><div id="seatsList" class="seats-list"></div></section>
+          <section class="side-card"><div class="section-head"><strong>🗣️ Tán dóc trong bàn</strong><span class="tiny">Trò chuyện nhanh</span></div><div id="chatMessages" class="chat-feed" aria-live="polite"><div class="chat-empty">Chưa ai nói gì. Gửi lời chào nào!</div></div><form id="chatForm" class="chat-form"><input id="chatInput" maxlength="160" placeholder="Gõ lời nhắn vui vẻ…" autocomplete="off"><button aria-label="Gửi tin nhắn" type="submit">➤</button></form></section>
+          <section class="side-card history-card"><div class="section-head"><strong>📜 Diễn biến</strong><span class="tiny">Ván đang chơi</span></div><div id="historyList" class="history-list"></div></section>
+        </aside>
+      </div>
+    </main>
+
+    <footer>♠ KÉO XÌ DZÁCH MIỀN NAM <span>•</span> Vui là chính, không tiền thật <span>•</span> Kết quả được xử lý trên máy chủ</footer>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="helpModal" class="modal-wrap" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-heading"><div><div class="eyebrow">LUẬT BÀN MIỀN NAM</div><h2 id="modalTitle">Chơi sao cho đúng?</h2></div><button id="closeHelp" class="modal-close" aria-label="Đóng">✕</button></div>
+    <p class="modal-intro">Dùng bộ bài 52 lá, mỗi người được chia 2 lá. Nhà con kéo hoặc dằn, sau đó Nhà cái chốt bài và xét. Bàn không dùng tính năng Split/Double của Blackjack casino.</p>
+    <div class="rules"><div><span>👑 Xì Bàng</span><b>A + A</b></div><div><span>🔥 Xì Dách</span><b>A + 10 / J / Q / K (2 lá)</b></div><div><span>🍀 Ngũ Linh</span><b>5 lá, tối đa 21 điểm</b></div><div><span>✅ Đủ tuổi</span><b>Nhà con từ 16–21 điểm</b></div><div><span>💥 Quắc</span><b>Trên 21 điểm</b></div><div><span>🂡 Lá A</span><b>Linh hoạt 1 / 10 / 11 điểm</b></div></div>
+    <div class="rule-note"><b>Thứ tự mạnh:</b> Xì Bàng → Xì Dách → Ngũ Linh → điểm thường (21 cao hơn 20). Hai Ngũ Linh thì <b>ít điểm hơn thắng</b>. Nếu cả cái và con quắc thì tính hòa trong biến thể mặc định này. Nhà cái có thể được chốt từ 15 hoặc 16 điểm (chủ phòng chọn).</div>
+    <p class="fineprint">Mỗi nhà con quyết định kéo/dằn riêng. Khi tất cả đã xong, Nhà cái kéo hoặc chốt bài; sau khi chốt mới được xét từng người hoặc xét cả bàn. Bài của người khác được giấu cho đến lúc được xét hoặc kết thúc ván. Thống kê là điểm thắng vui, không quy đổi tiền.</p>
+    <button id="closeHelp2" class="primary full">HIỂU RỒI, VÔ CHƠI!</button>
+  </div></div>
+</body></html>
