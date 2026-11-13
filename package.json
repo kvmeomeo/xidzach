@@ -1,0 +1,13 @@
+{
+  "name": "keo-xi-dzach-mien-nam-online",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Game kéo Xì Dzách miền Nam multiplayer theo thời gian thực qua WebSocket, chơi vui không tiền thật.",
+  "main": "server.js",
+  "engines": { "node": ">=20.0.0" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "license": "UNLICENSED"
+}
