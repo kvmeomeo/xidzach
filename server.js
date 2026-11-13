@@ -177,7 +177,7 @@ function settle(room,child){
   if(room.players.filter(p=>p.id!==room.dealerId).every(p=>p.result)) {
     room.phase='finished';dealer.revealed=true;
     recordRound(room);
-    pushHistory(room,`🏁 Ván ${room.round} kết thúc. Chủ phòng có thể chia ván mới.`);
+    pushHistory(room,`🏁 Ván ${room.round} kết thúc. Chủ phòng hoặc Nhà cái có thể chia ván mới.`);
   }
 }
 function handleEnter(ws,msg) {
@@ -242,8 +242,8 @@ function doAction(ws,msg){
     pushHistory(room,`🪑 Đã dọn ghế của ${target.name}.`);broadcast(room);return;
   }
   if(type==='start') {
-    if(!host||!['lobby','finished'].includes(room.phase))return error(ws,'Chỉ chủ phòng mới chia bài.');
-    if(room.players.length<2)return error(ws,'Cần ít nhất 2 người để bắt đầu.');
+    if(!(host||dealer)||!['lobby','finished'].includes(room.phase))return error(ws,'Chỉ Chủ phòng hoặc Nhà cái được chia bài.');
+    if(room.players.filter(p=>p.connected).length<2)return error(ws,'Cần ít nhất 2 người đang kết nối để bắt đầu.');
     if(room.players.some(p=>!p.connected))return error(ws,'Có người mất kết nối. Đợi họ trở lại hoặc dọn ghế trống.');
     if(!room.players.find(p=>p.id===room.dealerId)?.connected)room.dealerId=player.id;
     begin(room);broadcast(room);return;
