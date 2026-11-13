@@ -1,8 +1,8 @@
 {
   "name": "keo-xi-dzach-mien-nam-online",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "private": true,
-  "description": "Xì Dzách Online multiplayer bản 16 người, dễ bắt đầu từ 2 người, tự động chấm điểm từng ván và cộng dồn, tự động lật Xì Bàng/Xì Dzách, dễ triển khai GitHub và Render",
+  "description": "Xì Dzách 16 người: nhà cái xét rồi kéo tiếp, đồng hồ 30 giây máy chủ, Xì Bàng/Ngũ Linh x2 điểm, bảng điểm từng ván",
   "main": "server.js",
   "engines": {
     "node": ">=20.0.0"

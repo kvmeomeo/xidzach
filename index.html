@@ -62,6 +62,12 @@
 .waiting-text small{font-weight:600;color:#aecfbb}
 .role-host{font-size:10px;color:#f6d483;white-space:nowrap}
 @media(max-width:570px){.control-panel{margin:0 0 12px;padding:15px 12px}.control-panel .actions{margin-top:12px}.control-panel .action-btn.gold[data-action="start"]{width:100%;min-width:0;padding:16px 10px}}
+/* V5: Bộ đếm 30 giây nổi bật trên điện thoại, đồng hồ đồng bộ từ máy chủ */
+.seat-timer{display:inline-flex;justify-content:center;align-items:center;gap:5px;margin-top:7px;padding:5px 9px;border-radius:30px;background:#0e593b;border:1px solid #a9edbd77;color:#d9ffe3;font-size:11px;font-weight:950;font-variant-numeric:tabular-nums}
+.my-timer{margin:10px auto 0;padding:11px 15px;text-align:center;max-width:240px;border-radius:12px;background:#1a5137;border:1px solid #b0e9b188;color:#eeffde;font-weight:1000;font-size:18px;font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.seat-timer.timer-danger,.my-timer.timer-danger{background:#692a25;border-color:#f4a895;color:#ffcfb8;animation:timerPulse .85s ease-in-out infinite}
+.seat-timer.timer-over,.my-timer.timer-over{opacity:.8}
+@keyframes timerPulse{50%{filter:brightness(1.4)}}
 </style>
   
 </head>
@@ -78,7 +84,7 @@
         <div class="eyebrow"><span class="spark">✦</span> PHIÊN BẢN MULTIPLAYER REAL-TIME</div>
         <h1>Lập bàn <em>kéo xì dzách</em><br>cùng hội bạn.</h1>
         <p>Một người tạo phòng, gửi mã cho mọi người. Vào bàn là chơi — mỗi người tự kéo bài trên điện thoại hoặc máy tính.</p>
-        <div class="feature-chips"><span>🃏 Bài 52 lá</span><span>👥 2–16 người thật</span><span>🔐 Bài riêng tư</span><span>🏆 Tính điểm từng ván</span></div>
+        <div class="feature-chips"><span>🃏 Bài 52 lá</span><span>👥 2–16 người thật</span><span>🔐 Bài riêng tư</span><span>🏆 Xì Bàng / Ngũ Linh ×2</span><span>⏱️ Mỗi lượt 30 giây</span></div>
         <div class="landing-art" aria-hidden="true"><div class="glow-ring"></div><div class="art-card backcard"></div><div class="art-card leftcard">A <b>♠</b></div><div class="art-card rightcard">K <b>♥</b></div><div class="art-word">DZÁCH!</div></div>
       </section>
       <section class="entry-card">
@@ -102,6 +108,7 @@
         <div class="main-game">
           <section class="control-panel" aria-label="Điều khiển ván chơi">
             <div id="turnHint" class="turn-hint">Cần ít nhất 2 người trong phòng để bắt đầu.</div>
+            <div id="myTimer" class="my-timer" hidden></div>
             <div id="actions" class="actions"></div>
           </section>
           <section class="table-outer" aria-label="Bàn xì dzách">
@@ -118,7 +125,7 @@
           </section>
           <section class="score-panel" aria-label="Bảng điểm từng ván">
             <div class="score-head"><h2>🏆 BẢNG ĐIỂM TỪNG VÁN</h2><span>Tự động cộng trừ sau khi xét bài</span></div>
-            <p class="score-explain">Nhà con thắng <b>+1</b>, thua <b>−1</b>, hòa <b>0</b>. Nhà cái được <b>+1 cho mỗi nhà con thua</b> và <b>−1 cho mỗi nhà con thắng</b>. Điểm tích lũy qua các ván.</p>
+            <p class="score-explain">Thắng thường <b>+1</b>, thua thường <b>−1</b>, hòa <b>0</b>. Bên thắng bằng <b>Xì Bàng hoặc Ngũ Linh được ×2 điểm</b> (bên thua −2). Nhà cái được cộng/trừ đối ứng với từng Nhà con. Điểm tích lũy qua các ván.</p>
             <div id="scoreHighlights" class="score-highlights"></div>
             <div class="score-table-wrap"><table class="score-table"><thead id="scoreHead"></thead><tbody id="scoreBody"></tbody></table></div>
             <div id="scoreRoundInfo" class="score-round-info" aria-live="polite"></div>
@@ -136,10 +143,10 @@
   </div>
   <div id="toast" class="toast" role="status"></div>
   <div id="helpModal" class="modal-wrap" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-heading"><div><div class="eyebrow">LUẬT BÀN MIỀN NAM</div><h2 id="modalTitle">Chơi sao cho đúng?</h2></div><button id="closeHelp" class="modal-close" aria-label="Đóng">✕</button></div>
-    <p class="modal-intro">Bàn dùng 1 bộ 52 lá (bàn đông tự dùng 2 bộ để đủ lá), mỗi người được chia 2 lá. Nhà con kéo hoặc dằn, sau đó Nhà cái chốt bài và xét. Bàn không dùng tính năng Split/Double của Blackjack casino.</p>
+    <p class="modal-intro">Bàn dùng 1 bộ 52 lá (bàn đông tự dùng 2 bộ để đủ lá), mỗi người được chia 2 lá. Nhà con kéo hoặc dằn, sau đó Nhà cái có thể xét khi đủ điểm rồi vẫn tiếp tục kéo, hoặc chốt bài rồi xét. Mỗi lượt có 30 giây. Bàn không dùng tính năng Split/Double của Blackjack casino.</p>
     <div class="rules"><div><span>👑 Xì Bàng</span><b>A + A</b></div><div><span>🔥 Xì Dách</span><b>A + 10 / J / Q / K (2 lá)</b></div><div><span>🍀 Ngũ Linh</span><b>5 lá, tối đa 21 điểm</b></div><div><span>✅ Đủ tuổi</span><b>Nhà con từ 16–21 điểm</b></div><div><span>💥 Quắc</span><b>Trên 21 điểm</b></div><div><span>🂡 Lá A</span><b>Linh hoạt 1 / 10 / 11 điểm</b></div></div>
     <div class="rule-note"><b>Thứ tự mạnh:</b> Xì Bàng → Xì Dách → Ngũ Linh → điểm thường (21 cao hơn 20). Hai Ngũ Linh thì <b>ít điểm hơn thắng</b>. Bài Xì Bàng / Xì Dzách lật ngay, thắng trực tiếp nếu Nhà cái không có bài đặc biệt; nếu cả hai bên có bài đặc biệt thì xét theo thứ hạng (cùng loại hòa). Nếu cả cái và con quắc thì tính hòa trong biến thể mặc định này. Nhà cái có thể được chốt từ 15 hoặc 16 điểm (chủ phòng chọn).</div>
-    <p class="fineprint">Mỗi nhà con quyết định kéo/dằn riêng. Chủ phòng hoặc Nhà cái có thể chia bài khi có từ 2 người. Khi tất cả đã xong, Nhà cái kéo hoặc chốt bài; sau khi chốt mới được xét từng người hoặc xét cả bàn. Xì Bàng và Xì Dzách tự động lật bài và xét thắng ngay khi vừa chia, không phải chờ tới lượt Nhà cái. Nếu Nhà cái có bài đặc biệt, toàn bàn được xét ngay; khi hai người đều có bài đặc biệt sẽ so thứ hạng hoặc hòa nếu bằng nhau. Các bài còn lại được giấu cho đến lúc xét hoặc kết thúc ván. Bảng điểm: Nhà con thắng +1, thua −1, hòa 0; Nhà cái +1 mỗi người thắng và −1 mỗi người thua. Điểm theo từng ván và tổng tích lũy, không quy đổi tiền.</p>
+    <p class="fineprint">Mỗi nhà con quyết định kéo/dằn riêng. Chủ phòng hoặc Nhà cái có thể chia bài khi có từ 2 người. Khi tất cả đã xong, Nhà cái được kéo tiếp hoặc xét từng người khi đủ điểm (15/16 theo cài đặt), không cần chốt trước; vẫn có thể rút sau khi xét một số Nhà con. Chốt bài thì không được kéo nữa. Xì Bàng và Xì Dzách tự động lật bài và xét thắng ngay khi vừa chia, không phải chờ tới lượt Nhà cái. Nếu Nhà cái có bài đặc biệt, toàn bàn được xét ngay; khi hai người đều có bài đặc biệt sẽ so thứ hạng hoặc hòa nếu bằng nhau. Các bài còn lại được giấu cho đến lúc xét hoặc kết thúc ván. Bảng điểm: Nhà con thắng +1, thua −1, hòa 0; Nhà cái +1 mỗi người thắng và −1 mỗi người thua; Xì Bàng và Ngũ Linh của bên thắng được ×2 (bên thua −2), Xì Dách ×1. Mỗi người có 30 giây: Nhà con hết giờ sẽ tự dằn nếu đủ tuổi, nếu chưa đủ tuổi sẽ bỏ lượt; Nhà cái hết giờ được máy tự hoàn thiện/xét bài. Điểm theo từng ván và tổng tích lũy, không quy đổi tiền.</p>
     <button id="closeHelp2" class="primary full">HIỂU RỒI, VÔ CHƠI!</button>
   </div></div>
 <script>
@@ -148,7 +155,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const STORAGE='xidzach_v2_session';
-  let ws=null, state=null, session=readSession(), queue=null, reconnectTimer=null, manualLeave=false, chat=[], lastSignature='', toastTimer=null;
+  let ws=null, state=null, session=readSession(), queue=null, reconnectTimer=null, manualLeave=false, chat=[], lastSignature='', toastTimer=null, clockOffset=0;
   const firstUrlRoom=(new URLSearchParams(location.search).get('room')||'').trim().toUpperCase();
   $('roomCode').value=firstUrlRoom.replace(/[^A-Z0-9]/g,'').slice(0,6);
   if(session?.name)$('playerName').value=session.name;
@@ -181,7 +188,7 @@
         $('landing').hidden=true;$('roomPage').hidden=false;
         return;
       }
-      if(data.type==='state'){state=data;render();return;}
+      if(data.type==='state'){clockOffset=Date.now()-(data.serverNow||Date.now());state=data;render();return;}
       if(data.type==='chat'){
         chat.push(data);if(chat.length>55)chat.shift();renderChat();
       }
@@ -269,7 +276,7 @@
   }
   function seatHTML(player,asDealer=false){
     const mine=player.id===state.myId;
-    const judgeButton=!asDealer&&isDealer()&&state.phase==='dealer'&&state.dealerLocked&&!player.result;
+    const judgeButton=!asDealer&&isDealer()&&state.phase==='dealer'&&state.dealerCanJudge&&!player.result;
     const skipButton=!asDealer&&isHost()&&state.phase==='players'&&!player.connected&&player.status==='active';
     const icon=asDealer?'👑':'🂠';
     return `<div class="seat ${mine?'self':''} ${player.result==='win' && ['bang','dach'].includes(player.hand?.kind)?'instant-win':''} ${player.revealed && ['bang','dach'].includes(player.hand?.kind)?'natural-revealed':''}">
@@ -277,7 +284,8 @@
       <div class="namebar">${asDealer?'<span class="crown">♛</span>':''}<span class="name" title="${esc(player.name)}">${esc(player.name)}</span>${mine?' <span class="disconnected">(bạn)</span>':''}${player.isHost?' <span class="role-host" title="Chủ phòng">⭐ Chủ phòng</span>':''}${!player.connected?' <span class="disconnected">• offline</span>':''}</div>
       ${cardsHTML(player.cards)}
       <div class="seat-status">${textStatus(player)}</div>
-      <div class="seat-score">Tổng: <b>${signed(player.score)}</b> điểm ${state.phase!=='lobby'?` • Ván này: <span class="${player.roundPoints>0?'positive':player.roundPoints<0?'negative':'neutral'}">${signed(player.roundPoints)}</span>`:''}</div>
+      ${player.deadline&&(player.status==='active'||(asDealer&&state.phase==='dealer'))?`<div class="seat-timer" data-deadline="${player.deadline}">⏱️ 30s</div>`:''}
+      <div class="seat-score">Tổng: <b>${signed(player.score)}</b> điểm ${state.phase!=='lobby'?` • Ván này: <span class="${player.roundPoints>0?'positive':player.roundPoints<0?'negative':'neutral'}">${signed(player.roundPoints)}</span>${player.result&&player.multiplier===2?' ✨×2':''}`:''}</div>
       ${judgeButton?`<button type="button" class="mini-action" data-action="judge" data-target="${player.id}">🔎 XÉT BÀI</button>`:''}
       ${skipButton?`<button type="button" class="mini-action redact" data-action="skip" data-target="${player.id}">BỎ LƯỢT</button>`:''}
     </div>`;
@@ -302,9 +310,9 @@
       if(controller)buttons.push(btn(state.phase==='finished'?'🃏 CHIA VÁN MỚI':'🃏 CHIA BÀI BẮT ĐẦU','start','gold',{},!canStart));
       else buttons.push(`<div class="waiting-text">⏳ Đợi Chủ phòng / Nhà cái chia bài<br><small>Người có thể bắt đầu: ${esc(operator||'chủ phòng')}</small></div>`);
     }else if(state.phase==='players'){
-      if(ownDealer){hint='👑 Bạn là Nhà cái. Chờ các Nhà con kéo/dằn xong rồi tới bạn.';}
+      if(ownDealer){hint='👑 Bạn là Nhà cái. Chờ các Nhà con kéo/dằn hoặc hết 30 giây rồi tới bạn.';}
       else if(p.status==='active'){
-        hint='🃏 Tới lượt bạn. Kéo thêm lá hoặc dằn bài khi đủ 16 điểm.';
+        hint='⏱️ Bạn có 30 giây cho cả lượt. Kéo thêm lá hoặc dằn khi đủ 16 điểm; hết giờ chưa đủ tuổi sẽ bỏ lượt.';
         buttons.push(btn('🂠 KÉO BÀI','draw','gold'));
         const canStand=p.hand&&p.hand.kind!=='under';
         if(canStand)buttons.push(btn('✋ DẰN BÀI','stand','green'));
@@ -313,15 +321,19 @@
       if(host)buttons.push(btn('⏹ HỦY VÁN','cancel','ink'));
     }else if(state.phase==='dealer'){
       if(ownDealer){
-        hint=state.dealerLocked?'🔎 Bài đã chốt! Xét từng nhà con ngay trên bàn hoặc xét tất cả.':`👑 Tới lượt Nhà cái. Kéo tiếp hoặc chốt bài từ ${state.rules.dealerMin} điểm.`;
+        hint=state.dealerLocked?'🔎 Bài đã chốt! Hãy xét từng Nhà con hoặc xét cả bàn.':`👑 Bạn có 30 giây. Đủ ${state.rules.dealerMin} điểm được XÉT từng người rồi KÉO tiếp; CHỐT mới khóa rút bài.`;
         if(!state.dealerLocked){
           buttons.push(btn('🂠 NHÀ CÁI KÉO','draw','gold'));
           if(p.hand&&p.hand.kind!=='under' || p.hand?.score>=state.rules.dealerMin)buttons.push(btn('✋ CHỐT BÀI','stand','green'));
-        }else buttons.push(btn('🔎 XÉT CẢ BÀN','judge_all','gold'));
+        }
+        if(state.dealerCanJudge)buttons.push(btn('🔎 XÉT CẢ BÀN','judge_all','gold'));
       }else hint='🔎 Nhà cái đang xét bài… Bạn chờ công bố kết quả nha!';
       if(host)buttons.push(btn('⏹ HỦY VÁN','cancel','ink'));
     }
     $('turnHint').textContent=hint;
+    const myTimer=$('myTimer');
+    if(p.deadline&&(p.status==='active'||(ownDealer&&state.phase==='dealer'))){myTimer.hidden=false;myTimer.dataset.deadline=String(p.deadline);}
+    else {myTimer.hidden=true;delete myTimer.dataset.deadline;}
     $('actions').innerHTML=buttons.join('');
   }
   function renderSeats(){
@@ -355,12 +367,22 @@
     $('phasePill').textContent=phases[state.phase]||state.phase;
     $('deckDisplay').textContent=state.deckPacks+' BỘ • CÒN '+state.deckCount+' LÁ';
     $('tableInfo').textContent=state.phase==='lobby'?'Tối thiểu 2 người là chia được — không cần đủ 16':state.phase==='finished'?`VÁN ${state.round} HOÀN THÀNH`:state.phase==='players'?`VÁN ${state.round} • NHÀ CON KÉO`:`VÁN ${state.round} • NHÀ CÁI XÉT`;
-    renderSeats();renderActions();renderSettings();renderScoreboard();
+    renderSeats();renderActions();renderSettings();renderScoreboard();tickTimers();
     const own=me();
     const sig=state.round+':'+state.phase+':'+own?.result;
     if(sig!==lastSignature && own?.result==='win'){celebrate();if(['bang','dach'].includes(own.hand?.kind))toast('⚡ '+own.hand.label.toUpperCase()+' — LẬT BÀI THẮNG NGAY!');}
     lastSignature=sig;
   }
+  function tickTimers(){
+    const serverEstimate=Date.now()-clockOffset;
+    document.querySelectorAll('[data-deadline]').forEach(el=>{
+      const remaining=Math.max(0,Math.ceil((Number(el.dataset.deadline)-serverEstimate)/1000));
+      el.textContent=`⏱️ Còn ${remaining}s`;
+      el.classList.toggle('timer-danger',remaining<=10);
+      el.classList.toggle('timer-over',remaining===0);
+    });
+  }
+  setInterval(tickTimers,250);
   function celebrate(){
     for(let i=0;i<25;i++){
       const piece=document.createElement('span');piece.textContent=['♥','♠','♦','♣','★'][i%5];
