@@ -313,7 +313,6 @@ function createApp(){
   const server=http.createServer((req,res)=>{
     const requestPath=(req.url||'/').split('?')[0];
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');
-    res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'");
     if(requestPath==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({status:'ok',rooms:rooms.size}));}
     if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end('Method not allowed');}
     const filename=CLIENT_FILES[requestPath];
@@ -321,8 +320,27 @@ function createApp(){
     const filepath=path.join(__dirname,filename);
     fs.readFile(filepath,(err,data)=>{
       if(err){console.error('Không tìm thấy file giao diện:',filepath,err.code);res.writeHead(500,{'Content-Type':'text/plain; charset=utf-8'});return res.end('Thiếu index.html ở thư mục gốc cùng cấp server.js. Hãy upload đủ 3 file.');}
-      res.writeHead(200,{'Content-Type':TYPES[path.extname(filename)],'Cache-Control':'no-cache'});
-      res.end(req.method==='HEAD'?'':data);
+      // IMPORTANT: Giao diện 3 file có CSS + JS ngay trong index.html.
+      // CSP cũ (style-src/script-src 'self') chặn chúng, làm trang mất hết thiết kế.
+      // Sinh nonce mới cho từng lượt tải, chỉ cho phép CSS/JS nội bộ tin cậy.
+      const nonce=crypto.randomBytes(18).toString('base64');
+      const csp=[
+        "default-src 'self'",
+        "connect-src 'self' ws: wss:",
+        "img-src 'self' data:",
+        `style-src 'self' 'nonce-${nonce}'`,
+        "style-src-attr 'unsafe-inline'",
+        `script-src 'self' 'nonce-${nonce}'`,
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'none'"
+      ].join('; ');
+      res.setHeader('Content-Security-Policy',csp);
+      let html=data.toString('utf8');
+      html=html.replace('<style>',`<style nonce="${nonce}">`)
+               .replace('<script>',`<script nonce="${nonce}">`);
+      res.writeHead(200,{'Content-Type':TYPES[path.extname(filename)],'Cache-Control':'no-store, max-age=0'});
+      res.end(req.method==='HEAD'?'':html);
     });
   });
   server.on('upgrade',(req,socket,head)=>{
