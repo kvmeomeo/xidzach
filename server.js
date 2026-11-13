@@ -10,10 +10,10 @@ const { randomInt } = require('node:crypto');
 
 const SUITS = ['♠','♥','♣','♦'];
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-const MAX_PLAYERS = 7; // 1 nhà cái + tối đa 6 nhà con; 52 lá đủ khi mỗi người kéo tối đa 5 lá.
+const MAX_PLAYERS = 16; // 1 nhà cái + tối đa 15 nhà con. Dùng 2 bộ bài khi cần.
 
-function makeDeck() {
-  const cards = SUITS.flatMap(suit => RANKS.map(rank => ({rank, suit})));
+function makeDeck(packs = 1) {
+  const cards = Array.from({length:packs},()=>SUITS.flatMap(suit => RANKS.map(rank => ({rank, suit})))).flat();
   for (let i = cards.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);
     [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -67,7 +67,7 @@ const id = () => crypto.randomUUID();
 const strip = (s, max = 30) => String(s ?? '').replace(/[\u0000-\u001F\u007F<>]/g,'').replace(/\s+/g,' ').trim().slice(0,max);
 function roomCode() {let code; do {code = Array.from({length:6},()=>ROOM_ALPHABET[crypto.randomInt(ROOM_ALPHABET.length)]).join('');} while(rooms.has(code)); return code;}
 function pushHistory(room, message) {room.history.unshift({time:now(),text:message});room.history.length = Math.min(room.history.length,30);room.lastActive=now();}
-function info(room, player) {return {id:player.id, name:player.name, isHost:player.id===room.hostId, isDealer:player.id===room.dealerId, connected:player.connected, status:player.status, count:player.cards.length, result:player.result, stats:player.stats, folded:!!player.folded, revealed:!!player.revealed};}
+function info(room, player) {return {id:player.id, name:player.name, isHost:player.id===room.hostId, isDealer:player.id===room.dealerId, connected:player.connected, status:player.status, count:player.cards.length, result:player.result, stats:player.stats, score:player.score, roundPoints:player.roundPoints, folded:!!player.folded, revealed:!!player.revealed};}
 function viewFor(room, viewer) {
   const showAll = room.phase === 'finished';
   const players = room.players.map(player => {
@@ -78,8 +78,8 @@ function viewFor(room, viewer) {
     return base;
   });
   return {type:'state',code:room.code,phase:room.phase,round:room.round,hostId:room.hostId,dealerId:room.dealerId,myId:viewer.id,
-    rules:{dealerMin:room.rules.dealerMin},dealerLocked:room.dealerLocked,players,history:room.history.slice(0,20),
-    maxPlayers:MAX_PLAYERS, deckCount:room.deck.length};
+    rules:{dealerMin:room.rules.dealerMin},dealerLocked:room.dealerLocked,players,
+    maxPlayers:MAX_PLAYERS, deckCount:room.deck.length,deckPacks:room.deckPacks||1,roundHistory:room.roundHistory,roundCancelled:room.roundCancelled};
 }
 function send(ws, data) {try {ws.send(JSON.stringify(data));}catch { /* connection closed */ }}
 function error(ws, message) {send(ws,{type:'error',message});}
@@ -88,12 +88,12 @@ function userFor(ws) {const room=rooms.get(ws.roomCode);const player=room?.playe
 function makeRoom(ownerName, socket) {
   const owner = newPlayer(ownerName,socket);
   const room={code:roomCode(),createdAt:now(),lastActive:now(),hostId:owner.id,dealerId:owner.id,
-    round:0,phase:'lobby',players:[owner],deck:[],dealerLocked:false,rules:{dealerMin:16},history:[]};
+    round:0,phase:'lobby',players:[owner],deck:[],deckPacks:1,dealerLocked:false,rules:{dealerMin:16},history:[],roundHistory:[],roundRecorded:false,roundCancelled:false};
   rooms.set(room.code,room);joinSocket(socket,room,owner);
   pushHistory(room,`${owner.name} tạo phòng • Đang chờ bạn bè vào bàn.`);
   return {room,player:owner};
 }
-function newPlayer(name,socket) {return {id:id(),token:id(),name:strip(name,22)||'Người chơi',connected:true,socket, cards:[],status:'waiting',result:null,folded:false,revealed:false,stats:{win:0,lose:0,tie:0}};}
+function newPlayer(name,socket) {return {id:id(),token:id(),name:strip(name,22)||'Người chơi',connected:true,socket, cards:[],status:'waiting',result:null,folded:false,revealed:false,stats:{win:0,lose:0,tie:0},score:0,roundPoints:0};}
 function joinSocket(ws,room,player){
   if(player.socket && player.socket!==ws) { // Reconnect / nhiều tab: phiên cũ bị thay thế.
     const old=player.socket;old.roomCode=null;old.playerId=null;old.close();
@@ -102,11 +102,34 @@ function joinSocket(ws,room,player){
   send(ws,{type:'joined',code:room.code,token:player.token,name:player.name});
 }
 function begin(room) {
-  room.deck=makeDeck();room.round++;room.phase='players';room.dealerLocked=false;
-  room.players.forEach(p=>{p.cards=[];p.status='active';p.result=null;p.folded=false;p.revealed=false;});
+  // Tính đến tình huống mỗi người kéo tối đa 5 lá: bàn đông tự tăng số bộ bài.
+  room.deckPacks=Math.max(1,Math.ceil(room.players.length*5/52));
+  room.deck=makeDeck(room.deckPacks);room.round++;room.phase='players';room.dealerLocked=false;
+  room.roundStatsBaseline=new Map(room.players.map(p=>[p.id,{stats:{...p.stats},score:p.score}]));
+  room.roundRecorded=false;room.roundCancelled=false;
+  room.players.forEach(p=>{p.cards=[];p.status='active';p.result=null;p.folded=false;p.revealed=false;p.roundPoints=0;});
   for(let i=0;i<2;i++) for(const p of room.players) p.cards.push(room.deck.pop());
-  for(const p of room.players) if(p.id!==room.dealerId && shouldFinish(p.cards)) p.status='stood';
-  pushHistory(room,`🃏 Ván ${room.round} bắt đầu! Nhà con kéo / dằn bài.`);
+  const dealer=room.players.find(p=>p.id===room.dealerId);
+  const children=room.players.filter(p=>p.id!==room.dealerId);
+  pushHistory(room,`🃏 Ván ${room.round} bắt đầu với ${room.deckPacks} bộ bài.`);
+
+  // Xì Bàng và Xì Dzách được mở bài và phân thắng/thua NGAY lúc chia.
+  // Nếu Nhà cái có bài đặc biệt: công khai bài Nhà cái rồi xét mọi người lập tức.
+  // Nếu chỉ Nhà con có bài đặc biệt: công khai bài người đó, thắng ngay; các nhà con
+  // còn lại vẫn chơi tiếp bình thường. Hai bài đặc biệt được so đúng thứ hạng.
+  if(isNatural(dealer.cards)) {
+    dealer.status='stood';dealer.revealed=true;room.dealerLocked=true;
+    for(const child of children){child.status='stood';child.revealed=true;settle(room,child);}
+    pushHistory(room,`⚡ Nhà cái có ${evaluate(dealer.cards).label} — lật bài và xét toàn bàn ngay!`);
+    return;
+  }
+  for(const child of children){
+    if(isNatural(child.cards)){
+      child.status='stood';child.revealed=true;
+      settle(room,child); // Không phải đợi Nhà cái kéo rồi mới được xử thắng.
+      pushHistory(room,`⚡ ${child.name} có ${evaluate(child.cards).label} — thắng ngay!`);
+    }
+  }
   maybeDealerTurn(room);
 }
 function maybeDealerTurn(room){
@@ -117,18 +140,43 @@ function maybeDealerTurn(room){
     pushHistory(room,'🔎 Tới lượt Nhà cái. Kéo / dằn rồi xét từng nhà con hoặc xét cả bàn.');
   }
 }
+// Ghi bảng điểm ván đã hoàn tất. Mỗi nhà con đối đầu nhà cái đúng 1 điểm.
+function recordRound(room) {
+  if(room.roundRecorded) return;
+  room.roundRecorded=true;
+  const dealer=room.players.find(p=>p.id===room.dealerId);
+  const children=room.players.filter(p=>p.id!==room.dealerId);
+  room.roundHistory.push({
+    round:room.round,
+    dealer:{id:dealer.id,name:dealer.name},
+    dealerWins:children.filter(p=>p.result==='lose').length,
+    dealerLosses:children.filter(p=>p.result==='win').length,
+    dealerTies:children.filter(p=>p.result==='tie').length,
+    dealerPoints:dealer.roundPoints,
+    entries:room.players.map(p=>({id:p.id,name:p.name,delta:p.roundPoints,total:p.score,isDealer:p.id===room.dealerId,result:p.result||'dealer'}))
+  });
+  if(room.roundHistory.length>30) room.roundHistory.shift();
+}
 function settle(room,child){
   if(child.result) return;
   const dealer=room.players.find(p=>p.id===room.dealerId);
   const value=compareHands(child.cards,dealer.cards,child.folded);
   child.result = value>0?'win':value<0?'lose':'tie';
   child.revealed=true;
+  // +1 cho nhà con thắng, -1 cho nhà con thua; nhà cái nhận số điểm đối ứng.
+  // Hòa: cả hai không thay đổi điểm. Áp dụng ngay cả bài Xì Bàng/Xì Dzách lật tức thì.
+  const childDelta=value>0?1:value<0?-1:0;
+  child.roundPoints+=childDelta;
+  child.score+=childDelta;
+  dealer.roundPoints-=childDelta;
+  dealer.score-=childDelta;
   if(value>0) {child.stats.win++;dealer.stats.lose++;}
   else if(value<0) {child.stats.lose++;dealer.stats.win++;}
   else {child.stats.tie++;dealer.stats.tie++;}
   pushHistory(room,`🔎 ${child.name}: ${value>0?'Nhà con thắng 🎉':value<0?'Nhà cái thắng':'Hòa 🤝'}${child.folded?' (bỏ lượt)':''}.`);
   if(room.players.filter(p=>p.id!==room.dealerId).every(p=>p.result)) {
     room.phase='finished';dealer.revealed=true;
+    recordRound(room);
     pushHistory(room,`🏁 Ván ${room.round} kết thúc. Chủ phòng có thể chia ván mới.`);
   }
 }
@@ -202,7 +250,13 @@ function doAction(ws,msg){
   }
   if(type==='cancel') {
     if(!host||!['players','dealer'].includes(room.phase))return error(ws,'Chỉ chủ phòng được hủy ván đang chơi.');
-    room.phase='finished';room.players.forEach(p=>{p.revealed=true;p.result=null;});
+    room.phase='finished';room.players.forEach(p=>{
+      p.revealed=true;p.result=null;
+      const previous=room.roundStatsBaseline?.get(p.id);
+      if(previous){p.stats={...previous.stats};p.score=previous.score;}
+      p.roundPoints=0;
+    });
+    room.roundRecorded=true;room.roundCancelled=true; // Ván hủy không được ghi vào lịch sử điểm.
     pushHistory(room,'⏹️ Chủ phòng hủy ván. Không tính thành tích.');broadcast(room);return;
   }
   if(type==='draw') {
